@@ -11,7 +11,9 @@ gates.
 **The frozen text** is statement A: `FKSProblem2/Standalone/Mathlib/StatementA.lean`, namespace
 `FKSProblem2.StatementA`, at FKSProblem2 `fc71d65`.
 
-**Owner sign-off:** _pending._ Any change to a row after sign-off cancels it.
+**Owner sign-off: confirmed on 2026-09-24 for rows 1–10.** In the open-question manager's session, the owner answered "Sign rows 1–10" to the request to sign this list, as committed at `3e99d59`. The sign-off freezes the statement: statement A at `fc71d65`, blob `026fc7503ebd79967b58c93817d46451156f318a`. Any change to a row cancels it.
+
+The sign-off covers the declarations' names, types and bodies. Two later additions are metadata and change no row's meaning. First, the formal-proof block that `proof-links` needs. Second, the template's open-claim mark on row 3, which is "open problem" in its docstring plus an `open:` line in the proof block. The manager tells the owner when either lands.
 
 ## How the statement was made
 
