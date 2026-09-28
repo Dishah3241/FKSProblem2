@@ -97,5 +97,10 @@ root = "scripts.Layering"
 # names a declaration that actually exists. It is the drift protection the inline-annotation
 # approach gets for free and a LaTeX blueprint does not.
 [[require]]
+name = "GraphDimension"
+git = "https://github.com/Dishah3241/GraphDimension"
+rev = "9acc3a712d477b79c3a699c160b20726309eb3c6"
+
+[[require]]
 name = "checkdecls"
 git = "https://github.com/PatrickMassot/checkdecls.git"
