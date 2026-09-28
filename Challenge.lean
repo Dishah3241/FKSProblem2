@@ -5,11 +5,34 @@ Authors: Dishant Shah
 -/
 module
 
-public import Mathlib.Data.Nat.GCD.Basic
-public import Mathlib.Data.Finset.Card
+public import Mathlib.Combinatorics.SimpleGraph.Basic
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Topology.MetricSpace.Pseudo.Defs
 
 /-!
 # FKS Problem 2: a graph or its complement on 2d+1 vertices embeds in R^d
+
+The unit-distance Ramsey question of Frankl, Kupavskii and Swanepoel, *Embedding graphs in
+Euclidean space*, J. Combin. Theory A 171 (2020), 105146, Problem 2 of §5 (arXiv:1802.03092):
+must every simple graph on `2d + 1` vertices, or its complement, admit a unit-distance
+representation in `ℝ^d`?
+
+In the notation of N. Alon and A. Kupavskii, *Two notions of unit distance graphs*,
+J. Combin. Theory A 125 (2014) (arXiv:1306.3916), this asks whether `f_D(2d + 1) = d`, where
+`f_D(s)` is the least `d` such that every graph on `s` vertices, or its complement, has a
+unit-distance representation in `ℝ^d`. Theorem 4 of Frankl–Kupavskii–Swanepoel gives
+`⌈(s - 1)/2⌉ ≤ f_D(s) ≤ ⌈s/2⌉`, so the question asks whether their lower bound is sharp at
+the odd values `s = 2d + 1`.
+
+## Main declarations
+
+* `HasUnitDistanceRepresentation`: `G` has a unit-distance representation in `ℝ^d`: an
+  injective placement of the vertices in `ℝ^d` under which every edge has length `1`.
+  Non-edges are unconstrained and may also have length `1`; this is the Erdős–Harary–Tutte
+  notion.
+* `questionAt`: the question, for one fixed `d`.
+* `question`: the question, for every `d`.
+* `questionAt3`: the `d = 3` instance, the proved first target.
 
 The Mathlib-only statement source. `Challenge.lean` is **generated** from this file: everything
 above the closing proof-link note, concatenated with `scripts/palomar-challenge-footer.txt`.
@@ -22,68 +45,117 @@ Consequences to respect:
   requires that isolation;
 * it declares propositions and contains no proofs —
   `InlineFKSProblem2Proof` proves them;
-* a mathematician must be able to read it alone, so inline the relevant predicate rather than
-  naming one declared elsewhere;
+* a mathematician must be able to read it alone, so the relevant predicate is declared here,
+  with the same body as its sibling in `StatementA`, rather than imported from elsewhere;
 * every closed proposition carries a `.witness`, every non-dependent hypothesis of one carries
   a `.drop<Tag>`, and every definition a `.separating`, checked by `lake exe fidelity`.
-
-The content below is a worked illustration, to be replaced by the target during Stage 1. The
-mathematics is deliberately trivial; the shape of the declarations is the point.
 -/
 
 @[expose] public section
 
 namespace FKSProblem2.Standalone.Mathlib.InlineFKSProblem2
 
-/-- Every two distinct elements of `S` are coprime. -/
-def PairwiseCoprime (S : Finset ℕ) : Prop :=
-  ∀ a ∈ S, ∀ b ∈ S, a ≠ b → Nat.Coprime a b
+/-- `G` has a unit-distance representation in `ℝ^d` when there is an injective placement `p` of
+the vertices of `G` in the `d`-dimensional Euclidean space `EuclideanSpace ℝ (Fin d)` under
+which every edge of `G` has length exactly `1`.
 
-/-- Separating example for `PairwiseCoprime`, required by `lake exe fidelity`.
+This is the Erdős–Harary–Tutte notion: the vertices sit at distinct points, adjacent vertices
+sit at distance `1`, and non-adjacent vertices are unconstrained — they may also sit at
+distance `1`, so the placement need not be faithful. (The faithful variant, which also forbids
+length-`1` non-edges, is a different quantity; the source tracks it separately as `f_FD`.)
+Injectivity constrains only non-adjacent vertices, since adjacent vertices are automatically
+`1 > 0` apart. At `d = 0` the space is a single point, so exactly the edgeless graphs on at
+most one vertex have a unit-distance representation there. -/
+def HasUnitDistanceRepresentation (d : ℕ) {V : Type*} (G : SimpleGraph V) : Prop :=
+    ∃ p : V → EuclideanSpace ℝ (Fin d),
+      Function.Injective p ∧ ∀ u v : V, G.Adj u v → dist (p u) (p v) = 1
 
-The nearest plausible wrong definition is distinctness: elements merely pairwise different. This
-asserts a set that is pairwise distinct and not pairwise coprime, separating the two notions
-rather than respelling one. Without it a development could be about distinctness throughout,
-because no other check inspects what a definition means. -/
-def PairwiseCoprime.separating : Prop :=
-  ∃ S : Finset ℕ, (∀ a ∈ S, ∀ b ∈ S, a ≠ b → a ≠ b) ∧ ¬ PairwiseCoprime S
+/-- Separating example for `HasUnitDistanceRepresentation`, against its two nearest wrong
+readings. Injectivity does real work: in `ℝ^0` the empty graph on two vertices has a placement
+satisfying the edge clause vacuously, yet it has no unit-distance representation, since two
+distinct vertices cannot occupy the single point of `ℝ^0`; the reading that drops injectivity
+would accept it. Non-edges may have length `1`: the complete bipartite graph `K_{1,3}` has an
+injective placement in `ℝ^2` that sends every edge to length `1` and some non-edge to length
+`1` as well — the center of the star with three leaves at angles `0°, 60°, 180°` on the unit
+circle — which the faithful reading would reject. -/
+def HasUnitDistanceRepresentation.separating : Prop :=
+    (∃ p : Fin 2 → EuclideanSpace ℝ (Fin 0),
+        ∀ u v : Fin 2, (⊥ : SimpleGraph (Fin 2)).Adj u v → dist (p u) (p v) = 1) ∧
+      ¬HasUnitDistanceRepresentation 0 (⊥ : SimpleGraph (Fin 2)) ∧
+      ∃ p : Fin 1 ⊕ Fin 3 → EuclideanSpace ℝ (Fin 2), Function.Injective p ∧
+        (∀ u v : Fin 1 ⊕ Fin 3,
+            (completeBipartiteGraph (Fin 1) (Fin 3)).Adj u v →
+              dist (p u) (p v) = 1) ∧
+        ∃ u v : Fin 1 ⊕ Fin 3,
+          ¬(completeBipartiteGraph (Fin 1) (Fin 3)).Adj u v ∧
+            dist (p u) (p v) = 1
 
-/-- Any two distinct elements of `{2, 3, 5}` are coprime. -/
-def SmallPrimesCoprime : Prop :=
-  ∀ a ∈ ({2, 3, 5} : Finset ℕ), ∀ b ∈ ({2, 3, 5} : Finset ℕ), a ≠ b → Nat.Coprime a b
+/-- FKS Problem 2 at a fixed `d`: every simple graph `G` on the vertex set `Fin (2 * d + 1)` —
+hence, up to relabeling, every simple graph on exactly `2 * d + 1` vertices — admits a
+unit-distance representation in `ℝ^d`, or its complement `Gᶜ` does. The complement is taken on
+the same vertex set, with two distinct vertices adjacent exactly when they are non-adjacent in
+`G`, so an isolated vertex of `G` is adjacent to every other vertex of `Gᶜ`. Both `d` and `G`
+are universally quantified; the placement is existentially quantified inside
+`HasUnitDistanceRepresentation`.
 
-/-- Dropping membership of the first element leaves a false statement: `4` and `2` are distinct,
-`2` lies in the set, and they are not coprime. -/
-def SmallPrimesCoprime.drop1 : Prop :=
-  ¬ ∀ a : ℕ, ∀ b ∈ ({2, 3, 5} : Finset ℕ), a ≠ b → Nat.Coprime a b
+This is the source's phrasing "either `G` or its complement on `2d + 1` vertices has dimension
+at most `d`": the Erdős–Harary–Tutte dimension of a graph is the least `d` for which it has a
+unit-distance representation in `ℝ^d`, and since `ℝ^d'` sits isometrically inside `ℝ^d` for
+`d' ≤ d` by padding with zero coordinates, having dimension at most `d` is equivalent to having
+a unit-distance representation in `ℝ^d` itself. -/
+def questionAt (d : ℕ) : Prop :=
+    ∀ G : SimpleGraph (Fin (2 * d + 1)),
+      HasUnitDistanceRepresentation d G ∨ HasUnitDistanceRepresentation d Gᶜ
 
-/-- Dropping membership of the second element leaves a false statement: `2` and `4` are distinct,
-`2` lies in the set, and they are not coprime. -/
-def SmallPrimesCoprime.drop3 : Prop :=
-  ¬ ∀ a ∈ ({2, 3, 5} : Finset ℕ), ∀ b : ℕ, a ≠ b → Nat.Coprime a b
+/-- Separating example for `questionAt`, against its nearest wrong reading, the one that drops
+the complement. At `d = 1` the question holds: of the four graphs on three vertices up to
+isomorphism, the edgeless graph, the single-edge graph and the two-edge path each have a
+unit-distance representation in `ℝ^1` (put each edge's endpoints a unit apart and isolated
+vertices anywhere), and the triangle has none since three pairwise unit points cannot be
+collinear, but the triangle's complement is edgeless. Yet not every graph on three vertices
+itself has a unit-distance representation in `ℝ^1`, so the complement is doing real work: the
+complement-free misreading is false at `d = 1` while `questionAt 1` is true. -/
+def questionAt.separating : Prop :=
+    questionAt 1 ∧ ¬∀ G : SimpleGraph (Fin 3), HasUnitDistanceRepresentation 1 G
 
-/-- Dropping distinctness leaves a false statement: `2` is in the set and not coprime to itself. -/
-def SmallPrimesCoprime.drop4 : Prop :=
-  ¬ ∀ a ∈ ({2, 3, 5} : Finset ℕ), ∀ b ∈ ({2, 3, 5} : Finset ℕ), Nat.Coprime a b
+/-- Open problem: FKS Problem 2 in full — for every `d`, every simple graph on `2 * d + 1`
+vertices, or its complement, has a unit-distance representation in `ℝ^d`. The source asks this
+for positive `d`; the instance `d = 0` is one vertex in the one-point space `ℝ^0` and holds
+trivially, so quantifying over all of `ℕ` is equivalent to quantifying over the positive
+integers and adds no hypothesis. -/
+def question : Prop :=
+    ∀ d : ℕ, questionAt d
 
-/-- Satisfiability witness for `SmallPrimesCoprime`, required by `lake exe fidelity`.
+/-- Witness for `question`: the range of the question is inhabited with genuine instances, so
+the claim is not vacuous. At `d = 0` the instance is the trivial one-vertex case, and at `d = 1`
+it is the settled three-vertex case: every graph on three vertices either has a unit-distance
+representation in `ℝ^1` or has an edgeless complement, which embeds any three distinct points. -/
+def question.witness : Prop :=
+    questionAt 0 ∧ questionAt 1
 
-A claim whose hypotheses cannot be jointly satisfied is vacuously true, and vacuous truth passes
-`lake build`, `lake exe axioms`, and Comparator alike. This asserts that `PairwiseCoprime` holds
-of a set with more than one element, and that `SmallPrimesCoprime` itself holds, so the claim
-constrains something that exists. A witness taking the empty set would meet the letter of the
-obligation and none of its purpose, which is why the cardinality bound is part of the statement. -/
-def SmallPrimesCoprime.witness : Prop :=
-  ∃ S : Finset ℕ, PairwiseCoprime S ∧ 1 < S.card ∧ SmallPrimesCoprime
+/-- The `d = 3` instance of FKS Problem 2, the chosen first target: every simple graph on
+seven vertices, or its complement, has a unit-distance representation in `ℝ^3`. Since the known
+bounds give `3 ≤ f_D(7) ≤ 4`, this instance is equivalent to `f_D(7) = 3`. -/
+def questionAt3 : Prop :=
+    ∀ G : SimpleGraph (Fin 7),
+      HasUnitDistanceRepresentation 3 G ∨ HasUnitDistanceRepresentation 3 Gᶜ
+
+/-- Witness for `questionAt3`: the instance is not satisfied by every graph, so the question is
+not trivial — some graphs on seven vertices, such as the complete graph `K₇`, whose seven
+pairwise unit points would span six dimensions, have no unit-distance representation in `ℝ^3`
+themselves. The content of the question lies in the disjunction with the complement. -/
+def questionAt3.witness : Prop :=
+    ∃ G : SimpleGraph (Fin 7), ¬HasUnitDistanceRepresentation 3 G
 
 end FKSProblem2.Standalone.Mathlib.InlineFKSProblem2
 
 namespace FKSProblem2.Palomar
 
 set_option warningAsError false in
-/-- Any two distinct elements of `{2, 3, 5}` are coprime. -/
+/-- Every simple graph on seven vertices, or its complement, has a unit-distance
+representation in `ℝ^3`. -/
 theorem target :
-    FKSProblem2.Standalone.Mathlib.InlineFKSProblem2.SmallPrimesCoprime := by
+    FKSProblem2.Standalone.Mathlib.InlineFKSProblem2.questionAt3 := by
   sorry
 
 end FKSProblem2.Palomar

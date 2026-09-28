@@ -17,6 +17,12 @@ formal-proof block and a theorem named `Claim.proof` in the sibling `FooProof` m
 checks that the kernel-checked theorem concludes with exactly that proposition applied to the same
 parameters. Files under `Support/` are proof plumbing and are deliberately excluded.
 
+A frozen question may instead be an open claim: its formal-proof line is
+``* `Claim` → open: <reason>`` with a non-empty reason, and its declaration docstring begins with
+"Open problem" (case-insensitively). One marker without the other is a violation; an open claim
+must have no `Claim.proof`; and every statement module must retain at least one proved, linked
+claim. Open claims remain subject to the separate fidelity audit.
+
 Consequently, adding or removing an isolated claim without updating its proof block, or deleting or
 renaming its proof, fails the audit. Predicate definitions with a mathematical input, such as
 `IsReduced x`, are terminology rather than closed claims and are not selected. Run this executable
@@ -92,8 +98,29 @@ private def expectedProofName (claim : Name) : Name := Name.mkStr claim "proof"
 private def proofLine (claim proof : Name) : String :=
   s!"* `{claim.getString!}` → `{claim.getString!}.{proof.getString!}`"
 
+private def openPrefix (claim : Name) : String :=
+  s!"* `{claim.getString!}` → open: "
+
+private def openReason? (block : String) (claim : Name) : Option String := Id.run do
+  let marker := openPrefix claim
+  for line in block.splitOn "\n" do
+    if line.startsWith marker then
+      let reason := ((line.splitOn marker)[1]?.getD "").trimAscii.toString
+      if !reason.isEmpty then
+        return some reason
+  return none
+
 private def containsText (text fragment : String) : Bool :=
   (text.splitOn fragment).length > 1
+
+/-- The docstring *begins* with the words "open problem", case-insensitively. A proved claim may
+mention an open problem later in its docstring (for example "the `d = 3` case of an open problem")
+without being taken for an open claim. -/
+private def saysOpenProblem (doc : String) : Bool :=
+  let words : List String :=
+    ((doc.toLower.split (fun (c : Char) => !c.isAlphanum)).toList.map (·.toString)).filter
+      (!·.isEmpty)
+  words.take 2 == ["open", "problem"]
 
 private def forallArity : Expr → Nat
   | .forallE _ _ body _ => forallArity body + 1
@@ -118,10 +145,11 @@ private def isExactProofType (claim : Name) (claimType proofType : Expr) : Bool 
         argument == .bvar (arity - index - 1)
 
 private def audit (families : Array ClaimFamily) (orphanProofs : Array Name) :
-    CoreM (Array (Name × Name) × Array String) := do
+    CoreM (Array (Name × Name) × Array (Name × String) × Array String) := do
   let environment ← getEnv
   let moduleNames := environment.allImportedModuleNames
   let mut links := #[]
+  let mut opens := #[]
   let mut violations := orphanProofs.map fun proofModule =>
     s!"{proofModule} has no `Foo` statement sibling"
   for family in families do
@@ -148,8 +176,29 @@ private def audit (families : Array ClaimFamily) (orphanProofs : Array Name) :
         s!"{family.statementModule} has closed claims but no sibling {family.proofModule}"
     let source ← IO.FS.readFile family.statementFile
     let proofBlock := source.splitOn "## Formal proof"
-    let expectedLines := claims.map fun claim =>
-      proofLine claim (expectedProofName claim)
+    let block := if proofBlock.length == 2 then proofBlock[1]! else ""
+    let mut expectedLines := #[]
+    let mut provedCount := 0
+    for claim in claims do
+      let reason? := openReason? block claim
+      let doc? ← findDocString? environment claim
+      let docSaysOpen := saysOpenProblem (doc?.getD "")
+      if reason?.isSome != docSaysOpen then
+        violations := violations.push s!"{claim}: open marker and docstring disagree"
+      if let some reason := reason? then
+        expectedLines := expectedLines.push (openPrefix claim ++ reason)
+        if (environment.checked.get.find? (expectedProofName claim)).isSome then
+          violations := violations.push
+            s!"{claim} is marked open but has a proof; link it instead"
+        if docSaysOpen then
+          opens := opens.push (claim, reason)
+      else
+        expectedLines := expectedLines.push (proofLine claim (expectedProofName claim))
+        provedCount := provedCount + 1
+    if provedCount == 0 then
+      let claimNames := String.intercalate ", " (claims.toList.map toString)
+      violations := violations.push
+        s!"{family.statementModule}: every closed claim is marked open ({claimNames})"
     match proofBlock with
     | [_before, block] =>
         if !containsText block s!"`{family.proofModule.getString!}`" then
@@ -168,6 +217,8 @@ private def audit (families : Array ClaimFamily) (orphanProofs : Array Name) :
           s!"{family.statementFile}: expected exactly one `## Formal proof` block"
     for claim in claims do
       let some info := environment.checked.get.find? claim | continue
+      if (openReason? block claim).isSome then
+        continue
       let proof := expectedProofName claim
       let some proofInfo := environment.checked.get.find? proof
         | violations := violations.push s!"{claim} has no proof {proof}"
@@ -176,7 +227,7 @@ private def audit (families : Array ClaimFamily) (orphanProofs : Array Name) :
         links := links.push (claim, proof)
       else
         violations := violations.push s!"{proof} does not prove {claim}"
-  return (links, violations)
+  return (links, opens, violations)
 
 /-- Import the proof modules with environment extensions initialized. The resulting environment is
 kept until this short-lived process exits, as initializer results may point into its regions. -/
@@ -192,16 +243,20 @@ private unsafe def withImportedEnv {α} (modules : Array Name) (action : CoreM �
 
 public unsafe def main : IO UInt32 := do
   let (families, modules, orphanProofs) ← discoverClaimFamilies
-  let (links, violations) ← withImportedEnv modules (audit families orphanProofs)
-  if links.isEmpty then
-    IO.eprintln "proof-links: discovered no isolated claims."
-    return 1
+  let (links, opens, violations) ← withImportedEnv modules (audit families orphanProofs)
   if !violations.isEmpty then
     IO.eprintln s!"proof-links: {violations.size} violation(s):"
     for violation in violations do
       IO.eprintln s!"  {violation}"
     return 1
+  if links.isEmpty then
+    IO.eprintln "proof-links: discovered no isolated claims."
+    return 1
   for (claim, proof) in links do
     IO.println s!"{claim} ← {proof}"
-  IO.println s!"proof-links: verified {links.size} automatically discovered isolated claims."
+  for (claim, reason) in opens do
+    IO.println s!"open: {claim} ({reason})"
+  let total := links.size + opens.size
+  IO.println (s!"proof-links: verified {total} automatically discovered isolated claims " ++
+    s!"({links.size} linked, {opens.size} open).")
   return 0

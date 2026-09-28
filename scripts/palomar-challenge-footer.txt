@@ -2,9 +2,10 @@
 namespace FKSProblem2.Palomar
 
 set_option warningAsError false in
-/-- Any two distinct elements of `{2, 3, 5}` are coprime. -/
+/-- Every simple graph on seven vertices, or its complement, has a unit-distance
+representation in `ℝ^3`. -/
 theorem target :
-    FKSProblem2.Standalone.Mathlib.InlineFKSProblem2.SmallPrimesCoprime := by
+    FKSProblem2.Standalone.Mathlib.InlineFKSProblem2.questionAt3 := by
   sorry
 
 end FKSProblem2.Palomar

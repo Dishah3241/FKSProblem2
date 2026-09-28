@@ -88,6 +88,25 @@ probe() {
   PASSED=$((PASSED + 1))
 }
 
+# A positive control must pass and print the named open claim, not merely avoid a violation.
+positive_check() {
+  local name="$1" expect="$2"
+  shift 2
+  local out status
+  set +e
+  out="$(cd "$SCRATCH/tree" && "$@" 2>&1)"
+  status=$?
+  set -e
+  if [[ $status -ne 0 || "$out" != *"$expect"* ]]; then
+    echo "FAIL  $name: expected a successful audit naming '$expect'"
+    sed 's/^/      /' <<<"$out" | head -20
+    FAILED=$((FAILED + 1))
+    return
+  fi
+  echo "ok    $name"
+  PASSED=$((PASSED + 1))
+}
+
 echo "audit-probes: project '$PROJECT', $( [[ $FAST == 1 ]] && echo 'source-level probes only' || echo 'all probes' )"
 echo
 
@@ -128,6 +147,178 @@ theorem probe_planted_sorry : True := by sorry
 end
 LEAN
 probe "build-rejects-sorry" "Support/Probe.lean" lake build
+
+# Proof-links must distinguish a genuinely frozen question from an unfinished proof.
+# Each module has its own formal-proof block, so a failure must name the planted claim.
+setup_scratch
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/Probe.lean" <<LEAN
+module
+@[expose] public section
+namespace $PROJECT.Standalone.Mathlib
+def ProbeUnproved : Prop := ∀ n : Nat, n = n
+end $PROJECT.Standalone.Mathlib
+end
+/-!
+## Formal proof
+
+Proved in \`ProbeProof\`.
+-/
+LEAN
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/ProbeProof.lean" <<LEAN
+module
+public import $PROJECT.Standalone.Mathlib.Probe
+public section
+end
+LEAN
+probe "proof-links-rejects-unproved-claim" "ProbeUnproved" \
+  bash -c 'lake build 2>/dev/null; lake exe proof-links'
+
+setup_scratch
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/Probe.lean" <<LEAN
+module
+@[expose] public section
+namespace $PROJECT.Standalone.Mathlib
+/-- Open problem: a question about natural numbers. -/
+def ProbeStaleOpen : Prop := ∀ n : Nat, n = n
+end $PROJECT.Standalone.Mathlib
+end
+/-!
+## Formal proof
+
+Proved in \`ProbeProof\`.
+
+* \`ProbeStaleOpen\` → open: planted stale proof
+-/
+LEAN
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/ProbeProof.lean" <<LEAN
+module
+public import $PROJECT.Standalone.Mathlib.Probe
+public section
+namespace $PROJECT.Standalone.Mathlib
+theorem ProbeStaleOpen.proof : ProbeStaleOpen := by
+  unfold ProbeStaleOpen
+  intro n
+  rfl
+end $PROJECT.Standalone.Mathlib
+end
+LEAN
+probe "proof-links-rejects-stale-open" "ProbeStaleOpen is marked open but has a proof" \
+  bash -c 'lake build 2>/dev/null; lake exe proof-links'
+
+setup_scratch
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/Probe.lean" <<LEAN
+module
+@[expose] public section
+namespace $PROJECT.Standalone.Mathlib
+/-- A question about natural numbers. -/
+def ProbeNoOpenDocstring : Prop := ∀ n : Nat, n = n
+end $PROJECT.Standalone.Mathlib
+end
+/-!
+## Formal proof
+
+Proved in \`ProbeProof\`.
+
+* \`ProbeNoOpenDocstring\` → open: planted missing docstring
+-/
+LEAN
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/ProbeProof.lean" <<LEAN
+module
+public import $PROJECT.Standalone.Mathlib.Probe
+public section
+end
+LEAN
+probe "proof-links-rejects-open-without-docstring" \
+  "ProbeNoOpenDocstring: open marker and docstring disagree" \
+  bash -c 'lake build 2>/dev/null; lake exe proof-links'
+
+# The converse mismatch also matters: prose alone cannot silently waive a proof link.
+setup_scratch
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/Probe.lean" <<LEAN
+module
+@[expose] public section
+namespace $PROJECT.Standalone.Mathlib
+/-- Open problem: a question about natural numbers. -/
+def ProbeNoOpenMarker : Prop := ∀ n : Nat, n = n
+end $PROJECT.Standalone.Mathlib
+end
+/-!
+## Formal proof
+
+Proved in \`ProbeProof\`.
+-/
+LEAN
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/ProbeProof.lean" <<LEAN
+module
+public import $PROJECT.Standalone.Mathlib.Probe
+public section
+end
+LEAN
+probe "proof-links-rejects-open-without-marker" \
+  "ProbeNoOpenMarker: open marker and docstring disagree" \
+  bash -c 'lake build 2>/dev/null; lake exe proof-links'
+
+setup_scratch
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/Probe.lean" <<LEAN
+module
+@[expose] public section
+namespace $PROJECT.Standalone.Mathlib
+/-- Open problem: a question about natural numbers. -/
+def ProbeAllOpen : Prop := ∀ n : Nat, n = n
+end $PROJECT.Standalone.Mathlib
+end
+/-!
+## Formal proof
+
+Proved in \`ProbeProof\`.
+
+* \`ProbeAllOpen\` → open: planted all-open module
+-/
+LEAN
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/ProbeProof.lean" <<LEAN
+module
+public import $PROJECT.Standalone.Mathlib.Probe
+public section
+end
+LEAN
+probe "proof-links-rejects-all-open" "ProbeAllOpen" \
+  bash -c 'lake build 2>/dev/null; lake exe proof-links'
+
+# Positive control: the same module has one linked claim and one correctly marked open claim.
+setup_scratch
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/Probe.lean" <<LEAN
+module
+@[expose] public section
+namespace $PROJECT.Standalone.Mathlib
+/-- A proved case of an open problem; mentioning one mid-docstring does not make a claim open. -/
+def ProbeLinked : Prop := ∀ n : Nat, n = n
+/-- OPEN PROBLEM: a question about natural numbers. -/
+def ProbeOpen : Prop := ∀ n : Nat, n = n
+end $PROJECT.Standalone.Mathlib
+end
+/-!
+## Formal proof
+
+Proved in \`ProbeProof\`.
+
+* \`ProbeLinked\` → \`ProbeLinked.proof\`
+* \`ProbeOpen\` → open: positive control
+-/
+LEAN
+cat > "$SCRATCH/tree/$PROJECT/Standalone/Mathlib/ProbeProof.lean" <<LEAN
+module
+public import $PROJECT.Standalone.Mathlib.Probe
+public section
+namespace $PROJECT.Standalone.Mathlib
+theorem ProbeLinked.proof : ProbeLinked := by
+  unfold ProbeLinked
+  intro n
+  rfl
+end $PROJECT.Standalone.Mathlib
+end
+LEAN
+positive_check "proof-links-accepts-open-beside-proof" "open: $PROJECT.Standalone.Mathlib.ProbeOpen (positive control)" \
+  bash -c 'lake build 2>/dev/null && lake exe proof-links'
 
 # An axiom outside the permitted three must be rejected even though the tree compiles.
 setup_scratch

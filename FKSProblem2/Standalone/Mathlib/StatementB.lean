@@ -43,7 +43,7 @@ def problem2At (d : ℕ) : Prop :=
         ((∀ u v, G.Adj u v → dist (f u) (f v) = 1) ∨
           (∀ u v, Gᶜ.Adj u v → dist (f u) (f v) = 1))
 
-/-- The whole question, over precisely the positive dimensions `d = n + 1`.
+/-- Open problem: the whole question, over precisely the positive dimensions `d = n + 1`.
 The quantifier order is dimension, graph, then placement and choice of graph or complement;
 the elementary content of the latter quantifiers is displayed in `problem2At`. -/
 def problem2 : Prop :=
@@ -117,3 +117,15 @@ def problem2Three.separating : Prop :=
             (∀ u v, Gᶜ.Adj u v → dist (f u) (f v) = 1)))
 
 end FKSProblem2.StatementB
+
+/-!
+## Formal proof
+
+Proved in `StatementBProof`. The bare `witness` and `separating` lines link every `witness`
+and `separating` companion, including `problem2Three`'s.
+
+* `problem2` → open: FKS 2020 Problem 2
+* `problem2Three` → `problem2Three.proof`
+* `witness` → `witness.proof`
+* `separating` → `separating.proof`
+-/

@@ -102,8 +102,9 @@ complement-free misreading is false at `d = 1` while `questionAt 1` is true. -/
 def questionAt.separating : Prop :=
     questionAt 1 ∧ ¬∀ G : SimpleGraph (Fin 3), HasUnitDistanceRepresentation 1 G
 
-/-- FKS Problem 2 in full: for every `d`, every simple graph on `2 * d + 1` vertices, or its
-complement, has a unit-distance representation in `ℝ^d`. The source asks this for positive `d`;
+/-- Open problem: FKS Problem 2 in full — for every `d`, every simple graph on `2 * d + 1`
+vertices, or its complement, has a unit-distance representation in `ℝ^d`. The source asks this
+for positive `d`;
 the instance `d = 0` is one vertex in the one-point space `ℝ^0` and holds trivially, so
 quantifying over all of `ℕ` is equivalent to quantifying over the positive integers and adds no
 hypothesis. -/
@@ -132,3 +133,15 @@ def questionAt3.witness : Prop :=
     ∃ G : SimpleGraph (Fin 7), ¬HasUnitDistanceRepresentation 3 G
 
 end FKSProblem2.StatementA
+
+/-!
+## Formal proof
+
+Proved in `StatementAProof`. The `separating` line links both separating companions and the
+`witness` line both witnesses.
+
+* `separating` → `separating.proof`
+* `question` → open: FKS 2020 Problem 2
+* `witness` → `witness.proof`
+* `questionAt3` → `questionAt3.proof`
+-/

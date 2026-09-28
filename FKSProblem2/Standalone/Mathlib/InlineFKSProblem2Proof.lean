@@ -7,69 +7,35 @@ module
 
 public import FKSProblem2.Standalone.Mathlib.InlineFKSProblem2
 
+import FKSProblem2.Standalone.Mathlib.StatementAProof
+
 /-!
-# FKS Problem 2: a graph or its complement on 2d+1 vertices embeds in R^d
+# Proof of the inlined statement
 
-The proof sibling. Unlike its statement module this may import the development, and it is the one
-explicit exception to the standalone isolation rule.
-
-`lake exe proof-links` requires, for every closed proposition `C` in the statement module, a
-theorem named `C.proof` whose type is exactly `C` applied to the statement's own parameter
-telescope. Renaming or deleting one fails the audit.
-
-Each proof opens with `change`, spelling out the proposition it discharges. That keeps the proof
-readable without chasing the definition, and it fails loudly if the statement moves underneath it.
-`unfold` before `decide` is required because instance synthesis does not see through a `def`, even
-an exposed one.
+The inline statement repeats statement A's declarations with the same bodies, so each proof is
+the corresponding proof in `StatementAProof`: the `d = 3` disjunction from the shared library's
+seven-vertex result, and the `d = 0` and `d = 1` instances from the elementary line
+placements. FKS 2020 Problem 2 itself remains open; only its `d = 3` instance is proved.
 -/
 
 public section
 
 namespace FKSProblem2.Standalone.Mathlib.InlineFKSProblem2
 
-/-- `{2, 4}` is pairwise distinct and not pairwise coprime, separating coprimality from mere
-distinctness. -/
-theorem PairwiseCoprime.separating.proof : PairwiseCoprime.separating := by
-  change ∃ S : Finset ℕ, (∀ a ∈ S, ∀ b ∈ S, a ≠ b → a ≠ b) ∧ ¬ PairwiseCoprime S
-  refine ⟨{2, 4}, fun _ _ _ _ h => h, ?_⟩
-  unfold PairwiseCoprime
-  decide
+theorem HasUnitDistanceRepresentation.separating.proof :
+    HasUnitDistanceRepresentation.separating :=
+  FKSProblem2.StatementA.HasUnitDistanceRepresentation.separating.proof
 
-theorem SmallPrimesCoprime.proof : SmallPrimesCoprime := by
-  change ∀ a ∈ ({2, 3, 5} : Finset ℕ), ∀ b ∈ ({2, 3, 5} : Finset ℕ), a ≠ b → Nat.Coprime a b
-  decide
+theorem questionAt.separating.proof : questionAt.separating :=
+  FKSProblem2.StatementA.questionAt.separating.proof
 
-theorem SmallPrimesCoprime.drop1.proof : SmallPrimesCoprime.drop1 := by
-  change ¬ ∀ a : ℕ, ∀ b ∈ ({2, 3, 5} : Finset ℕ), a ≠ b → Nat.Coprime a b
-  intro hyp
-  have hmem : (2 : ℕ) ∈ ({2, 3, 5} : Finset ℕ) := by decide
-  have hne : (4 : ℕ) ≠ 2 := by decide
-  have hnot : ¬ Nat.Coprime 4 2 := by decide
-  exact absurd (hyp 4 2 hmem hne) hnot
+theorem question.witness.proof : question.witness :=
+  FKSProblem2.StatementA.question.witness.proof
 
-theorem SmallPrimesCoprime.drop3.proof : SmallPrimesCoprime.drop3 := by
-  change ¬ ∀ a ∈ ({2, 3, 5} : Finset ℕ), ∀ b : ℕ, a ≠ b → Nat.Coprime a b
-  intro hyp
-  have hmem : (2 : ℕ) ∈ ({2, 3, 5} : Finset ℕ) := by decide
-  have hne : (2 : ℕ) ≠ 4 := by decide
-  have hnot : ¬ Nat.Coprime 2 4 := by decide
-  exact absurd (hyp 2 hmem 4 hne) hnot
+theorem questionAt3.proof : questionAt3 :=
+  FKSProblem2.StatementA.questionAt3.proof
 
-theorem SmallPrimesCoprime.drop4.proof : SmallPrimesCoprime.drop4 := by
-  change ¬ ∀ a ∈ ({2, 3, 5} : Finset ℕ), ∀ b ∈ ({2, 3, 5} : Finset ℕ), Nat.Coprime a b
-  intro hyp
-  have hmem : (2 : ℕ) ∈ ({2, 3, 5} : Finset ℕ) := by decide
-  have hnot : ¬ Nat.Coprime 2 2 := by decide
-  exact absurd (hyp 2 hmem 2 hmem) hnot
-
-/-- `{2, 3}` is pairwise coprime and has more than one element, so the claim is not vacuous. -/
-theorem SmallPrimesCoprime.witness.proof : SmallPrimesCoprime.witness := by
-  change ∃ S : Finset ℕ, PairwiseCoprime S ∧ 1 < S.card ∧ SmallPrimesCoprime
-  refine ⟨{2, 3}, ?_⟩
-  refine ⟨?_, ?_, ?_⟩
-  · unfold PairwiseCoprime
-    decide
-  · decide
-  · exact SmallPrimesCoprime.proof
+theorem questionAt3.witness.proof : questionAt3.witness :=
+  FKSProblem2.StatementA.questionAt3.witness.proof
 
 end FKSProblem2.Standalone.Mathlib.InlineFKSProblem2
