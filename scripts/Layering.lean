@@ -59,6 +59,8 @@ private def subjectRoots : Array (Name × String) := #[
 private def leafRoots : Array Name := #[
   `FKSProblem2.Examples,
   `FKSProblem2.Standalone,
+  -- Equivalence imports the two standalone statements, so it is a later leaf.
+  `FKSProblem2.Stage1,
 ]
 
 private def isLocalTest (name : Name) : Bool :=
