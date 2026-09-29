@@ -1,54 +1,68 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/main/schema/v0.4.schema.json
-# formalization.yaml v0.4, written to Palomar's stricter rules. Before submitting:
-# - replace every {{…}};
-# - validate against the v0.4 schema and Palomar's own loader;
-# - take every model name from a run log, never from memory.
-# Worked example: projects/Erdos1007/formalization.yaml.
-# Rules and commands: the Math workspace's docs/research/2026-09-22-palomar-submission-path.md.
 version: "v0.4"
 
 project:
-  name: "FKS Problem 2: a graph or its complement on 2d+1 vertices embeds in R^d"
-  # The registry abstract, at most 10,000 characters: the mathematical content and the principal
-  # results, readable without the repository.
+  name: "FKS Problem 2 in dimension three"
   description: >-
-    Any two distinct elements of `{2, 3, 5}` are coprime.
-  authors:                 # humans only; credit models under `automation`
-    - "Dishant Shah"
-  responsible_maintainers:
-    - "Dishant Shah"
-  license: "Apache-2.0"    # must match the root LICENSE exactly
+    A Lean-checked proof of the d = 3 case of FKS Problem 2: for every simple graph G on
+    seven vertices, G or its complement has an injective placement in Euclidean three-space
+    under which every edge has length 1. Non-edges are unconstrained and may also have
+    length 1. The full question, for graphs on 2d + 1 vertices in dimension d, is stated
+    and marked open. In the notation of Alon and Kupavskii, the proved case gives
+    f_D(7) ≤ 3; together with the published lower bound it implies f_D(7) = 3. The formal
+    target is the seven-vertex disjunction, not a definition or equality for f_D.
+    The research audience is discrete geometers and extremal graph theorists studying
+    unit-distance representations, graph dimension and distance Ramsey questions.
+  authors: ["Dishant Shah"]
+  responsible_maintainers: ["Dishant Shah"]
+  license: "Apache-2.0"
 
-classification:            # one to eight codes from Palomar's taxonomy snapshots
-  arxiv: ["{{ARXIV_CATEGORY}}"]     # e.g. "math.CO"
-  msc2020: ["{{MSC2020_CODE}}"]     # e.g. "05C35"; may be empty
+classification:
+  arxiv: ["math.CO", "math.MG"]
+  msc2020: ["05C62", "52C10"]
 
-# `type` is one of paper, book, web discussion, folklore, original-proof or other. At least one
-# source must formalize, adapt or independently prove the result, which makes it source-based.
 sources:
-  - title: "{{SOURCE_TITLE}}"
-    authors:
-      - "{{SOURCE_AUTHORS}}"
-    id: "{{SOURCE_DOI_OR_URL}}"
+  - title: "Embedding graphs in Euclidean space"
+    authors: ["Nóra Frankl", "Andrey Kupavskii", "Konrad J. Swanepoel"]
+    id: "https://arxiv.org/abs/1802.03092"
     type: "paper"
-    location: "{{SOURCE_PINPOINT}}"
+    location: >-
+      J. Combin. Theory Ser. A 171 (2020), 105146; §5, Problem 2;
+      Theorem 4 for the bounds on f_D(s)
     relationship: "formalizes"
     author_endorsement: "not-contacted"
     note: >-
-      The proof of record, cited at its exact pinpoint.
+      The source of the open question, not a published proof of its d = 3 case.
+      This development proves that case using the pinned GraphDimension library.
+      No claim of a new or first mathematical proof is made.
+  - title: "Two notions of unit distance graphs"
+    authors: ["Noga Alon", "Andrey Kupavskii"]
+    id: "https://arxiv.org/abs/1306.3916"
+    type: "paper"
+    location: "J. Combin. Theory Ser. A 125 (2014), 1–17; §3, Additional Problems"
+    relationship: "background"
+    author_endorsement: "not-contacted"
+    note: >-
+      Defines f_D(s) as the least dimension in which every graph on s vertices or its
+      complement is a distance graph. The faithful quantity f_FD is different: it also
+      constrains non-edges. This project uses the non-faithful notion.
 
-# Prior or parallel formalizations. When the statement came from formal-conjectures, that
-# repository belongs here, pinned to a commit.
 related_formalizations:
-  - id: "https://github.com/google-deepmind/formal-conjectures/blob/{{FC_COMMIT}}/{{FC_PATH}}"
+  - id: "https://github.com/Dishah3241/GraphDimension/tree/9acc3a712d477b79c3a699c160b20726309eb3c6"
     relationship: "builds-on"
     note: >-
-      The formal statement is this file's {{FC_DECLARATION}}, reproduced with its supporting
-      definitions inlined so that it depends on Mathlib alone.
+      The proof lives in GraphDimension.Extremal.SevenVertices, declaration
+      SimpleGraph.unitDistEmbeddable_three_or_compl_fin_seven. This repository supplies
+      the frozen statements, their equivalence, fidelity companions and Palomar entry point.
+      The statement was authored here, not inherited from formal-conjectures.
 
 status:
   scope: >-
-    {{SCOPE}}
+    questionAt3: every simple graph on Fin 7 or its complement has a unit-distance
+    representation in EuclideanSpace R (Fin 3). The full FKS Problem 2 remains open
+    and is represented by Prop definitions, not admitted theorems. The elementary
+    d = 0 and d = 1 instances and all fidelity companions are also proved.
+    The sole deliberate sorry is the advertised hole in Challenge.lean, excluded below.
   sorry_count: 0
   sorry_in_definitions: 0
   axioms: ["propext", "Classical.choice", "Quot.sound"]
@@ -61,27 +75,140 @@ status:
 
 fidelity:
   divergences: >-
-    {{DIVERGENCES}}
+    The submission specializes the source's open question to d = 3 and does not claim
+    to settle it for all d. Fin 7 represents every seven-vertex simple graph up to
+    relabelling, with complement on the same vertex set, injective placements and
+    Euclidean L2 distance. The general frozen StatementA.question quantifies over all
+    natural d, adding the trivial one-vertex d = 0 case to the positive-dimensional
+    reading. StatementB quantifies over positive dimensions and places the existential
+    outside the disjunction; Stage1.Equivalence proves the formulations equivalent,
+    including questionAt3_iff. The inline Palomar claim agrees definitionally with A.
+    The numerical interpretation f_D(7) = 3 uses the published lower bound; that equality
+    and lower bound are not part of the formal target.
 
 automation:
-  # One entry per phase. `method` is manual, copilot, agent, autonomous or other. Only 3 of
-  # Palomar's first 36 entries disclosed AI assistance; this workspace discloses it every time.
+  # Worker model strings were read with harness/run-model, not inferred from wave-log labels.
+  # The manager's model is from its first assistant event in the session log named below.
   methods:
     - method: "agent"
-      models: ["{{MODEL_FROM_RUN_LOG}}"]
-      framework: "{{HARNESS_AND_VERSION}}"
+      models: ["glm-5.3-flash"]
+      framework: "pi"
       tool_setup: >-
-        {{PHASE}}: what this phase produced, and its run ids.
+        Statement A, authored blind: P9-A, run 20260924-121415-fb962a89.
+    - method: "agent"
+      models: ["gpt-6-astra"]
+      framework: "Codex"
+      tool_setup: >-
+        Statement B, authored blind: P9-B, run 20260924-121415-ce68618f.
+        Blueprint design and composing leaf signatures: P9-D1, 20260924-125637-367864dc.
+    - method: "agent"
+      models: ["gpt-6-sol"]
+      framework: "Codex"
+      tool_setup: >-
+        Equivalence of statements A and B: P9-eq, run 20260924-124350-f8a4755f.
+    - method: "agent"
+      models: ["glm-5.3-flash"]
+      framework: "pi"
+      tool_setup: >-
+        GraphDimension proof leaves: P9-L1, eight- and nine-edge theorems
+        (20260924-125428-054ed2ad); P9-D, small graphs and the seven-vertex edge count
+        (20260924-131216-340ecbe3); P9-T1T2, complement containments
+        (20260924-150031-2ee28310); P9-Pa, lattice placements P2/P4/P6
+        (20260924-160121-ee07110e); P9-Pb, radical placements P1/P3/P5
+        (20260924-160121-3fd87bea); P9-P7C2, the prism and five-vertex containment
+        (20260924-160122-f3a7616e); P9-C4, the degree-two reduction
+        (20260924-181439-18feb341); P9-T4, the conditional seven-vertex disjunction
+        (20260924-192013-447cc767). P9-E run 20260924-191924-4f355b8f was a competing
+        ten-edge attempt, stopped after the Codex proof landed; its proof was not used.
+    - method: "agent"
+      models: ["gpt-6-astra"]
+      framework: "Codex"
+      tool_setup: >-
+        GraphDimension proof leaves: P9-C1, four-way complement classification
+        (20260924-150030-47cf4871); P9-C3, the subdivided K3,3 completion
+        (20260924-150031-bdb1d3b1); P9-C5, six vertices of minimum degree three
+        (20260924-181439-e1300d65).
+    - method: "agent"
+      models: ["gpt-6-sol"]
+      framework: "Codex"
+      tool_setup: >-
+        GraphDimension P9-E, the ten-edge theorem: run 20260924-191924-9ce593b4.
+        This was the accepted proof from the two competing attempts.
+    - method: "agent"
+      models: ["glm-5.3-flash"]
+      framework: "pi"
+      tool_setup: >-
+        This repository: P9-BF, the predicate bridge and questionAt3.proof
+        (20260928-145742-5e6ddfea); P9-int, proof siblings, fidelity proofs, open-claim
+        metadata and Palomar integration (20260928-151114-af5e107e); P9-bp, the Stage 2
+        blueprint against the landed proof (20260928-192141-080aca45).
+    - method: "agent"
+      models: ["gpt-6-astra"]
+      framework: "Codex"
+      tool_setup: >-
+        Read-only novelty check P9-N2, run 20260928-201034-46ecc550. It found no prior
+        proof but identified gaps in literature coverage, so the public description
+        makes no priority claim. Release preparation P9-rel, 20260928-210415-03f308e0:
+        README, metadata, Comparator record and local verification; no publication.
+    - method: "agent"
+      models: ["GPT-5.4 Mini Medium"]
+      framework: "Cursor"
+      tool_setup: >-
+        P9-N2 run 20260928-201034-f17250ef was the attempted second novelty check.
+        It failed at the weekly usage limit and supplied no completed review.
+    - method: "agent"
+      models: ["grok-4.6-build"]
+      framework: "grok (xAI)"
+      tool_setup: >-
+        Replacement read-only novelty check P9-N2, run 20260928-205318-7d06ff75.
+        Its disposition is left to the manager; this release retains the conservative
+        wording supported by the Codex novelty report.
+    - method: "agent"
+      models: ["grok-4.7-build"]
+      framework: "grok (xAI)"
+      tool_setup: >-
+        Read-only release review P9-rev, run 20260928-210416-c05412b4: pending integration.
+        No completed review verdict is claimed in this metadata.
+    - method: "agent"
+      models: ["claude-opus-5-5"]
+      framework: "Claude Code"
+      tool_setup: >-
+        Managing agent (Claude Opus 5.5): scaffold, worker briefs, Compass list,
+        verification and integration of the leaves, restoration of the P5 declaration's
+        intended name, and the unconditional seven-vertex theorem after the ten-edge
+        proof landed. In this repository it moved the bridge to
+        Standalone/Mathlib/Support/GraphDimensionBridge.lean to respect layering,
+        made Stage1 a later leaf, rewrapped a style line, pinned GraphDimension and
+        coordinated integration, the blueprint, novelty checks, review and release.
+        It is a contributor to the development, not an independent reviewer.
+        Model evidence: first assistant event in managing session
+        7f6ec652-fc39-48b8-93fc-972da4ed11b0.jsonl.
   spend_usd: "subscription-based usage"
   notes: >-
-    {{PROCESS}}: who chose the target, who signed off the statement's meaning, and what a human
-    actually read.
+    The human maintainer chose FKS Problem 2 and the d = 3 first target and signed
+    Compass rows 1–10 on 2026-09-24 (docs/compass.md). The statement authors worked
+    blind to each other from briefs fixing the intended mathematical reading.
+    Their equivalence checks encoding agreement, not independence of that reading.
+    The manager contributed mathematical integration and fixes as well as orchestration.
+    The main proof is in GraphDimension at 9acc3a712d477b79c3a699c160b20726309eb3c6.
+    Run IDs cover the P9 rows of the workspace's open-question manager wave log;
+    framework versions are not evidenced by the model headers.
 
 limitations: >-
-  {{LIMITATIONS}}
+  Only the d = 3 case is the submission target; the full problem remains open.
+  f_D and its numerical lower bound are not formalized here. The novelty search
+  did not establish priority, and no new or first-proof claim is made. Witnesses,
+  separating examples and statement equivalence reduce semantic risk but do not
+  replace mathematical review. Local Comparator on macOS uses no sandbox;
+  sandboxed Palomar preflight and publication remain release steps for the manager.
 
 review:
-  status: "{{REVIEW_STATUS}}"    # unchecked, agent-reviewed, self-assessed, peer-reviewed or author-verified
+  status: "unchecked"
   reviewers: []
   notes: >-
-    {{REVIEW_NOTES}}
+    Pending: a read-only review by grok (xAI), model grok-4.7-build, run
+    20260928-210416-c05412b4, is awaiting manager integration. The review is a separate
+    session; no claim is made that its model lineage wrote none of the transitive proof.
+    MANAGER ACTION: replace this sentence with the review's saved path, verdict,
+    findings, applied fixes and assessment of model-lineage overlap, then update status.
+    The owner's statement sign-off is recorded in docs/compass.md.
