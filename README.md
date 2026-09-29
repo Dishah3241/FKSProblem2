@@ -28,17 +28,16 @@ The literature check did not establish priority, so no claim of a new or first p
 | Comparator | Accepted by Lean and NanoDa in the local macOS run ([record](docs/comparator-2026-09-28.md)) |
 | Library | [GraphDimension at the pinned revision](https://github.com/Dishah3241/GraphDimension/tree/9acc3a712d477b79c3a699c160b20726309eb3c6); the main proof is `SimpleGraph.unitDistEmbeddable_three_or_compl_fin_seven` |
 | Statement review | Two statements authored blind and proved equivalent in [Stage1](FKSProblem2/Stage1/Equivalence.lean); the owner signed [Compass rows 1–10](docs/compass.md) on 2026-09-24 |
-| Release review | Pending: read-only grok (xAI) review, run `20260928-210416-c05412b4`, awaiting manager integration |
+| Release review | grok (grok-4.7-build), run `20260929-001335-5a12c3af`: "publish after fixes", every fix applied ([record](docs/review-2026-09-29.md)) |
 | Blueprint | [Source](blueprint/src/content.tex); publication pending |
 | `formal-conjectures` | No inherited statement or proof PR; the statement was authored in this project |
 | Mathlib | Reusable proof machinery is in GraphDimension; no Mathlib PR for this release |
 | Palomar | Not yet submitted |
 
-**MANAGER ACTION — review:** replace this sentence with the saved review link, verdict,
-findings and applied fixes, and describe any overlap with the proof authors' model lineages.
-The managing agent, Claude Code / Claude Opus 5.5, contributed integration and fixes to the
-development; it was not merely an observer. [formalization.yaml](formalization.yaml) records
-the run-log model evidence and contributions for each phase, including the library leaves.
+**Review.** A release review by grok, which wrote none of P9's own Lean, found the statement faithful and the
+target right, and asked for documentation fixes, all applied ([record](docs/review-2026-09-29.md)). grok models
+wrote parts of GraphDimension during earlier rungs, so the review is independent of P9's work but not of the whole
+library. The managing agent, Claude Code (Claude Opus 5.5), contributed integration and fixes to the development.
 
 ## The statement
 

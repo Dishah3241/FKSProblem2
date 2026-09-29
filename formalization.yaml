@@ -167,8 +167,9 @@ automation:
       models: ["grok-4.7-build"]
       framework: "grok (xAI)"
       tool_setup: >-
-        Read-only release review P9-rev, run 20260928-210416-c05412b4: pending integration.
-        No completed review verdict is claimed in this metadata.
+        Release review, run 20260929-001335-5a12c3af (the first attempt, 20260928-210416-c05412b4,
+        was cancelled by the harness after three turns): verdict "publish after fixes", all applied;
+        docs/review-2026-09-29.md.
     - method: "agent"
       models: ["claude-opus-5-5"]
       framework: "Claude Code"
@@ -203,12 +204,12 @@ limitations: >-
   sandboxed Palomar preflight and publication remain release steps for the manager.
 
 review:
-  status: "unchecked"
+  status: "agent-reviewed"
   reviewers: []
   notes: >-
-    Pending: a read-only review by grok (xAI), model grok-4.7-build, run
-    20260928-210416-c05412b4, is awaiting manager integration. The review is a separate
-    session; no claim is made that its model lineage wrote none of the transitive proof.
-    MANAGER ACTION: replace this sentence with the review's saved path, verdict,
-    findings, applied fixes and assessment of model-lineage overlap, then update status.
+    A release review by grok (grok-4.7-build), run 20260929-001335-5a12c3af, is saved as
+    docs/review-2026-09-29.md: statement faithful, Palomar target right, no sorry or native_decide;
+    verdict "publish after fixes", every fix applied. grok wrote none of P9's own Lean; grok models,
+    through cursor, wrote parts of GraphDimension during rungs 2-4, so the review is independent of
+    P9's work but not of the whole library.
     The owner's statement sign-off is recorded in docs/compass.md.
