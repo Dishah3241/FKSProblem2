@@ -263,7 +263,7 @@ complement, has a unit-distance representation in $\mathbb{R}^d$
     SimpleGraph.compl_classification_fin_six_of_ten_edges}
   \leanok
   A graph on six vertices with ten edges and minimum degree at least three has a complement
-  isomorphic to exactly one of the four forms $C_5 \sqcup K_1$, $P_6$, $C_4 \sqcup P_2$, or
+  isomorphic to one of the four forms $C_5 \sqcup K_1$, $P_6$, $C_4 \sqcup P_2$, or
   $C_3 \sqcup P_3$.
 \end{lemma}
 \begin{proof}
@@ -440,7 +440,8 @@ complement, has a unit-distance representation in $\mathbb{R}^d$
   \uses{thm:seven,lem:statement-bridge}
   The frozen instance $d = 3$ of Conjecture~\ref{que:fks} holds: every simple graph on seven
   vertices, or its complement, has a unit-distance representation in $\mathbb{R}^3$.
-  Since the known bounds give $3 \le f_D(7) \le 4$, this says $f_D(7) = 3$.
+  This is $f_D(7) \le 3$. With the lower bound $f_D(7) \ge 3$ of Frankl, Kupavskii and Swanepoel (2020, Theorem 4), which is
+  not formalized here, it gives $f_D(7) = 3$.
 \end{theorem}
 \begin{proof}
   Apply the seven-vertex disjunction of Theorem~\ref{thm:seven} and rewrite each side of the
