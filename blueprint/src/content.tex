@@ -1,6 +1,20 @@
 % The actual content of the blueprint, used by both the web and print versions.
 % Do not include \begin{document}.
 %
+% Stage 2 blueprint for P9: the d = 3 instance of FKS Problem 2. The structure and the
+% mathematics follow the design report docs/research/2026-09-24-p9-d1-blueprint-design.md,
+% Section 3, with the \lean{} names of the declarations that actually exist at the pinned
+% GraphDimension revision 9acc3a7.
+%
+% Grounding: Frankl, Kupavskii and Swanepoel, "Embedding graphs in Euclidean space",
+% J. Combin. Theory A 171 (2020) 105146, arXiv 1802.03092; the question is its Problem 2
+% (l.~441 of the LaTeX source). The general results live in the shared library
+% GraphDimension, which this project imports through the bridge
+% (FKSProblem2.Standalone.Mathlib.Support.GraphDimensionBridge) and the proof sibling
+% (FKSProblem2.Standalone.Mathlib.StatementAProof); their \lean{} names are library
+% declarations inside this project's import closure. The statement side lives in this
+% repository: FKSProblem2.Standalone.Mathlib.StatementA and its proof sibling.
+%
 % Each node carries:
 %   \lean{Full.Declaration.Name}  the Lean declaration this node IS
 %   \leanok                        this node is fully formalized
@@ -9,27 +23,426 @@
 % `leanblueprint checkdecls` verifies every \lean{...} names a declaration that actually exists
 % in the built project. That check is what keeps this document from drifting away from the Lean,
 % so never write a \lean{} you have not built, and run it before every push.
+% Every node below is proved, so each carries \leanok --- except the question itself,
+% which is open and does not.
 
-\chapter{FKS Problem 2: a graph or its complement on $2d+1$ vertices embeds in $\mathbb{R}^d$}
+\chapter{FKS Problem 2 in dimension three}
 
-\begin{definition}[Pairwise coprimality]
-  \label{def:pairwise-coprime}
-  \lean{FKSProblem2.Standalone.Mathlib.PairwiseCoprime}
+\section{Notation}
+
+``Contains'' and ``avoids'' always refer to ordinary subgraphs, not induced ones.
+$K_5 - e$ is the complete graph on five vertices with the edge $34$ deleted (Lean:
+$\texttt{deleteEdges \{s(3, 4)\}}$). $\overline G$ is the complement of $G$ on the same
+vertex set. $f_D(s)$ is the least $d$ such that every graph on $s$ vertices, or its
+complement, has a unit-distance representation in $\mathbb{R}^d$
+(Frankl--Kupavskii--Swanepoel, introduction).
+
+\section{The question}
+
+\begin{definition}[Unit-distance representation]
+  \label{def:representation}
+  \lean{FKSProblem2.StatementA.HasUnitDistanceRepresentation, SimpleGraph.UnitDistEmbeddable}
   \leanok
-  A finite set of naturals is \emph{pairwise coprime} when any two distinct elements are coprime.
+  A graph has a \emph{unit-distance representation} in $\mathbb{R}^d$ when its vertices admit
+  an injective placement in $\mathbb{R}^d$ under which every edge has length one. Non-adjacent
+  vertices are unconstrained and may also land one unit apart: this is the
+  Erd\H{o}s--Harary--Tutte notion, and the source tracks the faithful variant, which also
+  forbids unit non-edges, separately as $f_{FD}$. The frozen statement's predicate and the
+  shared library's predicate agree definitionally (Lemma~\ref{lem:statement-bridge}).
 \end{definition}
 
-\begin{lemma}[Small primes are pairwise coprime]
-  \label{lem:small-primes-coprime}
-  \lean{FKSProblem2.Standalone.Mathlib.SmallPrimesCoprime}
+\begin{conjecture}[Frankl--Kupavskii--Swanepoel, Problem 2]
+  \label{que:fks}
+  \lean{FKSProblem2.StatementA.questionAt, FKSProblem2.StatementA.question}
+  \uses{def:representation}
+  Every simple graph on $2d + 1$ vertices, or its complement, has a unit-distance
+  representation in $\mathbb{R}^d$ --- in the source's wording, has dimension at most $d$,
+  since $\mathbb{R}^{d'}$ sits in $\mathbb{R}^d$ for $d' \le d$. This is open: Problem 2 of
+  Frankl--Kupavskii--Swanepoel (l.~441), asking whether their lower bound
+  $\lceil (s - 1)/2 \rceil \le f_D(s)$ is sharp at the odd values $s = 2d + 1$. The instances
+  $d = 0$ and $d = 1$ are elementary and are proved in this repository.
+\end{conjecture}
+
+\section{Existing library dependencies}
+
+\begin{lemma}[Transfer and ambient dimension]
+  \label{lem:transfer}
+  \lean{SimpleGraph.UnitDistEmbeddable.comap,
+    SimpleGraph.UnitDistEmbeddable.of_le,
+    SimpleGraph.UnitDistEmbeddable.of_iso,
+    SimpleGraph.UnitDistEmbeddable.mono}
   \leanok
-  \uses{def:pairwise-coprime}
-  The set $\{2, 3, 5\}$ is pairwise coprime.
+  \uses{def:representation}
+  Representations pull back along injective graph homomorphisms, so a subgraph of a graph
+  with a representation has one, representations transport along isomorphisms, and a
+  representation in $\mathbb{R}^n$ gives one in $\mathbb{R}^m$ for $n \le m$ by appending zero
+  coordinates.
 \end{lemma}
 
-\begin{proof}
+\begin{lemma}[Re-attaching a vertex]
+  \label{lem:reattach}
+  \lean{SimpleGraph.UnitDistEmbeddable.extend_degree_le_two_fin_three}
   \leanok
-  \uses{def:pairwise-coprime}
-  Each pair is distinct and shares no prime factor, so the claim is decidable and holds by
-  computation.
+  \uses{def:representation}
+  A vertex of degree at most two can be restored in $\mathbb{R}^3$ to a representation of its
+  deletion, provided that when it has two neighbours they have been placed one unit apart:
+  with one neighbour the new point lies on the unit sphere about it, and with two the unit
+  spheres about the neighbours meet in a circle, which avoids the finitely many points
+  already used.
+\end{lemma}
+
+\begin{lemma}[$K_5$ minus an edge]
+  \label{lem:k5-minus-edge}
+  \lean{SimpleGraph.unitDistEmbeddable_completeGraph_five_deleteEdge}
+  \leanok
+  \uses{def:representation}
+  The graph $K_5 - e$, with the deleted edge joining $3$ and $4$, has a representation in
+  $\mathbb{R}^3$: vertices $0, 1, 2$ form a unit equilateral triangle and $3, 4$ are the
+  apexes of the two regular tetrahedra on it, which are $2\sqrt{2/3}$ apart.
+\end{lemma}
+
+\begin{lemma}[Two-regular graphs on six vertices]
+  \label{lem:two-regular-six}
+  \lean{SimpleGraph.isRegularOfDegree_two_fin_six}
+  \leanok
+  A two-regular graph on six vertices is isomorphic to the six-cycle $C_6$ or to the disjoint
+  union of two triangles $K_3 \sqcup K_3$.
+\end{lemma}
+
+\section{The eight- and nine-edge theorems}
+
+\begin{lemma}[At most eight edges]
+  \label{lem:eight}
+  \lean{SimpleGraph.unitDistEmbeddable_three_of_ncard_edgeSet_le}
+  \leanok
+  \uses{def:representation}
+  Every finite graph with at most eight edges has a representation in $\mathbb{R}^3$.
+  Chaffee--Noble, Theorem 6.
+\end{lemma}
+
+\begin{lemma}[The nine-edge obstruction]
+  \label{lem:nine}
+  \lean{SimpleGraph.completeBipartiteGraph_three_three_isContained_of_not_unitDistEmbeddable_three}
+  \leanok
+  \uses{def:representation,lem:eight,lem:reattach,lem:k5-minus-edge,lem:prism}
+  A finite graph with at most nine edges and no representation in $\mathbb{R}^3$ contains an
+  ordinary copy of $K_{3,3}$. With Lemma~\ref{lem:eight} this says $K_{3,3}$, with nine
+  edges, is the smallest graph without a representation in $\mathbb{R}^3$.
+\end{lemma}
+
+\section{Concrete graphs and their placements}
+
+\begin{definition}[Finite labelled graphs]
+  \label{def:small-graphs}
+  \lean{SimpleGraph.subdividedCompleteBipartiteGraphThreeThree,
+    SimpleGraph.wheelGraphFive,
+    SimpleGraph.octahedronGraph,
+    SimpleGraph.completeMultipartiteGraphOneOneFive,
+    SimpleGraph.coneTwoTrianglesGraph}
+  \leanok
+  Five explicit graphs on $\texttt{Fin 7}$ or $\texttt{Fin 6}$, with their label conventions:
+  the subdivision of $K_{3,3}$ has parts $0, 1, 2$ and $3, 4, 5$, with the edge $03$ replaced
+  by $06$ and $63$ through the new vertex $6$; the wheel has rim $0, 1, 2, 3, 4$ and hub
+  $5$; the octahedron $K_{2,2,2}$ has opposite pairs $01, 23, 45$; $K_{1,1,5}$ has singleton
+  parts $0$ and $1$ and remaining part $2, \dots, 6$; the cone over two triangles
+  $K_1 \vee (K_3 \sqcup K_3)$ has triangles $012$ and $345$ with universal hub $6$. Each
+  definition carries a characteristic adjacency lemma and a nondegenerate separating example
+  in the library.
+\end{definition}
+
+\begin{lemma}[Subdivided $K_{3,3}$]
+  \label{lem:subdivision}
+  \lean{SimpleGraph.unitDistEmbeddable_subdividedCompleteBipartiteGraph_three_three}
+  \leanok
+  \uses{def:small-graphs,def:representation}
+  Subdividing one edge of $K_{3,3}$ gives a graph representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  With $s = \sqrt3$, send $0, 1, 2, 3, 4, 5, 6$ to
+  \[
+  (\tfrac12,\tfrac{s}2,0),\ (\tfrac12,\tfrac12,\tfrac1{\sqrt2}),\
+  (\tfrac12,\tfrac12,-\tfrac1{\sqrt2}),\ (0,1,0),\ (0,0,0),\ (1,0,0),\
+  (\tfrac14,\tfrac{2+s}4,\tfrac{\sqrt{2+s}}2).
+  \]
+  The nine cross edges and the two subdivision edges $06$ and $36$ have squared length one by
+  direct computation, and the seven points are distinct.
+\end{proof}
+
+\begin{lemma}[Five-rim wheel]
+  \label{lem:wheel}
+  \lean{SimpleGraph.unitDistEmbeddable_wheelGraph_five}
+  \leanok
+  \uses{def:small-graphs,def:representation}
+  The wheel with five rim vertices is representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  Put the rim on the integer points $(1, 1, 0)$, $(0, 1, 1)$, $(1, 0, 1)$, $(1, -1, 0)$,
+  $(1, 0, -1)$ of the cuboctahedron and the hub at their centre $(0, 0, 0)$, all scaled by
+  $1/\sqrt2$: every rim edge and every spoke has integer squared distance $2$, so each scaled
+  edge has length one.
+\end{proof}
+
+\begin{lemma}[Complement of a six-vertex path]
+  \label{lem:path-complement}
+  \lean{SimpleGraph.unitDistEmbeddable_compl_pathGraph_six}
+  \leanok
+  \uses{def:representation}
+  The complement of $P_6$ is representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  In path order, divide the integer vectors
+  \[
+  (-9,9,-9),\ (-15,-15,-15),\ (9,9,9),\ (-31,-1,-1),\ (9,-9,-9),\ (-9,-9,9)
+  \]
+  by $18\sqrt2$. The six vectors are distinct, and every complement edge has integer squared
+  distance $648 = (18\sqrt2)^2$, so each scaled edge has length one.
+\end{proof}
+
+\begin{lemma}[The octahedron]
+  \label{lem:octahedron}
+  \lean{SimpleGraph.unitDistEmbeddable_octahedronGraph}
+  \leanok
+  \uses{def:small-graphs,def:representation}
+  The octahedron on the opposite pairs $01, 23, 45$ is representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  Put vertex $2i$ at $e_i/\sqrt2$ and vertex $2i + 1$ at $-e_i/\sqrt2$ on the coordinate
+  axes. Two vertices of different opposite pairs have squared distance $2/2 = 1$, and each
+  opposite pair is antipodal, so exactly the edges are placed at length one.
+\end{proof}
+
+\begin{lemma}[$K_{1,1,5}$]
+  \label{lem:k115}
+  \lean{SimpleGraph.unitDistEmbeddable_completeMultipartiteGraph_one_one_five}
+  \leanok
+  \uses{def:small-graphs,def:representation}
+  The graph $K_{1,1,5}$ is representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  Put the singleton parts at the poles $(0, 0, \pm\tfrac12)$, one unit apart, and the five
+  remaining vertices on the equator circle of radius $\sqrt3/2$ at the rational parameters
+  $t = 0, \dots, 4$ of the circle $((1 - t^2)/(1 + t^2),\, 2t/(1 + t^2))$. Each equator point
+  has squared distance $3/4 + 1/4 = 1$ from both poles, and the five points are distinct.
+  This is the placement required in Lemma~\ref{lem:complement-k5}.
+\end{proof}
+
+\begin{lemma}[Cone over two triangles]
+  \label{lem:cone}
+  \lean{SimpleGraph.unitDistEmbeddable_coneTwoTrianglesGraph}
+  \leanok
+  \uses{def:small-graphs,def:representation}
+  The graph $K_1 \vee (K_3 \sqcup K_3)$ is representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  Put the hub at the origin and the two triangles on opposite triangle faces of the
+  cuboctahedron --- the integer points $(1, 1, 0)$, $(0, 1, 1)$, $(1, 0, 1)$ and their
+  negatives, in planes at heights $\pm\sqrt{2/3}$ with circumradius $1/\sqrt3$ --- all scaled
+  by $1/\sqrt2$. Every triangle edge and every spoke to the hub has length one, and the two
+  triangles are placed at different heights. This is the placement required in
+  Lemma~\ref{lem:complement-k33}.
+\end{proof}
+
+\begin{lemma}[Triangular prism]
+  \label{lem:prism}
+  \lean{SimpleGraph.unitDistEmbeddable_compl_cycleGraph_six}
+  \leanok
+  \uses{def:representation}
+  The complement of $C_6$ is representable in $\mathbb{R}^2$: the triangular prism is planar.
+\end{lemma}
+\begin{proof}
+  A unit equilateral triangle and its translate by one unit perpendicular to the triangle
+  give six points whose unit distances are exactly the nine prism edges, the three vertical
+  matching edges included. Chaffee--Noble, Theorem 7.
+\end{proof}
+
+\section{Combinatorial reductions}
+
+\begin{lemma}[Six vertices and ten edges]
+  \label{lem:classification}
+  \lean{SimpleGraph.classification_fin_six_of_five_edges,
+    SimpleGraph.compl_classification_fin_six_of_ten_edges}
+  \leanok
+  A graph on six vertices with ten edges and minimum degree at least three has a complement
+  isomorphic to exactly one of the four forms $C_5 \sqcup K_1$, $P_6$, $C_4 \sqcup P_2$, or
+  $C_3 \sqcup P_3$.
+\end{lemma}
+\begin{proof}
+  The complement has five edges and maximum degree at most two, so its components are paths
+  and cycles; with six vertices and five edges exactly one component is a path, counting an
+  isolated vertex as a one-vertex path, and the possible cycle components give the four
+  forms. The library proves this five-edge classification by a finite certificate over the
+  $2^{15}$ adjacency masks of graphs on six vertices, checked in the kernel; the ten-edge
+  theorem is its complement.
+\end{proof}
+
+\begin{lemma}[At most five vertices]
+  \label{lem:five}
+  \lean{SimpleGraph.isContained_completeGraph_five_deleteEdge_of_card_le_five}
+  \leanok
+  Every graph on at most five vertices that contains no $K_5$ is contained in the fixed graph
+  $K_5 - e$.
+\end{lemma}
+\begin{proof}
+  On fewer than five vertices, inject into four of the five labels, avoiding an endpoint of
+  the deleted edge. On five vertices the graph is not complete, so a missing edge is
+  relabelled onto the deleted pair $34$.
+\end{proof}
+
+\begin{lemma}[Exceptional neighbourhood completion]
+  \label{lem:completion}
+  \lean{SimpleGraph.nonempty_iso_subdividedCompleteBipartiteGraph_of_completion}
+  \leanok
+  \uses{def:small-graphs}
+  Let $G$ have at most seven vertices and ten edges, contain no $K_{3,3}$, and let $v$ have
+  precisely the two neighbours $a \ne b$. If $G - v + ab$ contains $K_{3,3}$, then $G$ is
+  isomorphic to the graph obtained by subdividing one edge of $K_{3,3}$.
+\end{lemma}
+\begin{proof}
+  The completion $G - v + ab$ has at most nine edges, so its $K_{3,3}$ copy exhausts both
+  bounds. The added edge must be absent from $G - v$, since otherwise $G$ already contains
+  $K_{3,3}$. Restoring $v$ and its two incident edges uses no unused vertex, so $G$ is the
+  subdivision.
+\end{proof}
+
+\begin{lemma}[The degree-two case]
+  \label{lem:degree-two}
+  \lean{SimpleGraph.unitDistEmbeddable_three_of_degree_eq_two}
+  \leanok
+  \uses{lem:eight,lem:nine,lem:completion,lem:subdivision,lem:reattach,lem:transfer}
+  A graph on at most seven vertices and ten edges, containing no $K_{3,3}$ and having a
+  degree-two vertex, is representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  Delete the vertex $v$. If its two neighbours are adjacent, the deletion has at most eight
+  edges and Lemma~\ref{lem:eight} places it, and Lemma~\ref{lem:reattach} restores $v$.
+  Otherwise complete the deletion by the neighbour edge, giving at most nine edges. If the
+  completion is representable, its placement already puts the two neighbours one unit apart,
+  and Lemma~\ref{lem:reattach} restores $v$. If it is not, Lemma~\ref{lem:nine} gives a
+  $K_{3,3}$ copy in the completion, Lemma~\ref{lem:completion} identifies $G$ with the
+  subdivided $K_{3,3}$, and Lemma~\ref{lem:subdivision}'s placement transfers along the
+  isomorphism.
+\end{proof}
+
+\begin{lemma}[Six vertices of minimum degree three]
+  \label{lem:six}
+  \lean{SimpleGraph.unitDistEmbeddable_three_fin_six_of_minDegree_ge_three}
+  \leanok
+  \uses{lem:classification,lem:wheel,lem:path-complement,lem:octahedron,
+    lem:two-regular-six,lem:prism,lem:transfer}
+  A graph on six vertices with at most ten edges, minimum degree at least three, and no
+  $K_{3,3}$ is representable in $\mathbb{R}^3$.
+\end{lemma}
+\begin{proof}
+  The degree sum forces nine or ten edges. With nine edges the graph is cubic, so its
+  complement is two-regular and Lemma~\ref{lem:two-regular-six} makes it $C_6$ or
+  $K_3 \sqcup K_3$; in the first case $G$ is the triangular prism, placed by
+  Lemma~\ref{lem:prism}, and in the second $G$ contains $K_{3,3}$, which is excluded.
+  With ten edges, Lemma~\ref{lem:classification} gives the four complement forms: the first
+  two place $G$ above the wheel of Lemma~\ref{lem:wheel} and the path complement of
+  Lemma~\ref{lem:path-complement}; in the third form $G$ is contained in the octahedron of
+  Lemma~\ref{lem:octahedron}; the fourth form makes $G$ itself contain $K_{3,3}$, which is
+  excluded.
+\end{proof}
+
+\begin{theorem}[The ten-edge lemma]
+  \label{thm:ten}
+  \lean{SimpleGraph.unitDistEmbeddable_three_of_ncard_edgeSet_le_ten}
+  \leanok
+  \uses{lem:reattach,lem:degree-two,lem:five,lem:k5-minus-edge,lem:six,lem:transfer}
+  Every finite graph on at most seven vertices and at most ten edges that contains neither
+  $K_5$ nor $K_{3,3}$ is representable in $\mathbb{R}^3$.
+\end{theorem}
+\begin{proof}
+  Induct on the number of vertices. A vertex of degree zero or one is deleted, the induction
+  hypothesis places the deletion, and Lemma~\ref{lem:reattach} restores it, the two
+  forbidden-copy exclusions persisting under deletion. A vertex of degree exactly two is the
+  case of Lemma~\ref{lem:degree-two}. Otherwise the minimum degree is at least three, so
+  $3|V| \le 2|E| \le 20$ and $|V| \le 6$; seven vertices of minimum degree three are
+  impossible. At most five vertices are covered by Lemma~\ref{lem:five} together with the
+  placement of $K_5 - e$, and six vertices by Lemma~\ref{lem:six}.
+\end{proof}
+
+\section{Complements and the frozen instance}
+
+\begin{lemma}[Complement of a graph containing $K_5$]
+  \label{lem:complement-k5}
+  \lean{SimpleGraph.compl_isContained_completeMultipartiteGraph_one_one_five}
+  \leanok
+  \uses{def:small-graphs}
+  If a graph $G$ on seven vertices contains $K_5$, then $\overline G$ is contained in
+  $K_{1,1,5}$.
+\end{lemma}
+\begin{proof}
+  Send the five clique vertices to the part of size five and the two remaining vertices to
+  the singleton parts. Every complement edge meets one of the two vertices outside the
+  clique, and $K_{1,1,5}$ has all such edges.
+\end{proof}
+
+\begin{lemma}[Complement of a graph containing $K_{3,3}$]
+  \label{lem:complement-k33}
+  \lean{SimpleGraph.compl_isContained_coneTwoTrianglesGraph}
+  \leanok
+  \uses{def:small-graphs}
+  If a graph $G$ on seven vertices contains $K_{3,3}$, then $\overline G$ is contained in the
+  cone $K_1 \vee (K_3 \sqcup K_3)$.
+\end{lemma}
+\begin{proof}
+  Send the two sides of the copy to the two triangles and the remaining vertex to the hub.
+  No complement edge joins the two sides of the copy, and the cone has exactly the edges
+  inside the triangles and to the hub.
+\end{proof}
+
+\begin{lemma}[Complementary edge count]
+  \label{lem:edge-count}
+  \lean{SimpleGraph.edgeSet_ncard_add_compl_fin_seven}
+  \leanok
+  For every graph on seven vertices, $|E(G)| + |E(\overline G)| = \binom72 = 21$: the two
+  edge sets partition the pairs of distinct vertices.
+\end{lemma}
+
+\begin{theorem}[The seven-vertex disjunction]
+  \label{thm:seven}
+  \lean{SimpleGraph.unitDistEmbeddable_three_or_compl_fin_seven_of_tenEdgeLemma,
+    SimpleGraph.unitDistEmbeddable_three_or_compl_fin_seven}
+  \leanok
+  \uses{lem:edge-count,thm:ten,lem:complement-k5,lem:k115,lem:complement-k33,lem:cone,
+    lem:transfer}
+  Every graph on seven vertices, or its complement, has a unit-distance representation in
+  $\mathbb{R}^3$.
+\end{theorem}
+\begin{proof}
+  By Lemma~\ref{lem:edge-count} one of $G$ and $\overline G$, the sparse colour $H$, has at
+  most ten edges. If $H$ contains neither $K_5$ nor $K_{3,3}$, Theorem~\ref{thm:ten} places
+  $H$. If $H$ contains $K_5$, Lemma~\ref{lem:complement-k5} embeds the other colour in
+  $K_{1,1,5}$, placed by Lemma~\ref{lem:k115}; if $H$ contains $K_{3,3}$,
+  Lemma~\ref{lem:complement-k33} embeds it in the cone over two triangles, placed by
+  Lemma~\ref{lem:cone}. Transfers along the containments by Lemma~\ref{lem:transfer}, and
+  the disjuncts are exchanged when the sparse colour is the complement. The library factors
+  the argument through an explicit hypothesis form taking the ten-edge lemma as an
+  assumption, which Theorem~\ref{thm:ten} then discharges.
+\end{proof}
+
+\begin{lemma}[Bridge to Statement A]
+  \label{lem:statement-bridge}
+  \lean{FKSProblem2.hasUnitDistanceRepresentation_iff_unitDistEmbeddable}
+  \leanok
+  \uses{def:representation}
+  The frozen statement's representation predicate is equivalent to the shared library's
+  \texttt{UnitDistEmbeddable}: both quantify an injective placement of the vertices in the
+  $d$-dimensional Euclidean space $\mathbb{R}^d$ sending every edge to distance one, leaving
+  non-edges unconstrained. The equivalence holds by \texttt{Iff.rfl}.
+\end{lemma}
+
+\begin{theorem}[The frozen dimension-three instance]
+  \label{thm:question-at-three}
+  \lean{FKSProblem2.StatementA.questionAt3, FKSProblem2.StatementA.questionAt3.proof}
+  \leanok
+  \uses{thm:seven,lem:statement-bridge}
+  The frozen instance $d = 3$ of Conjecture~\ref{que:fks} holds: every simple graph on seven
+  vertices, or its complement, has a unit-distance representation in $\mathbb{R}^3$.
+  Since the known bounds give $3 \le f_D(7) \le 4$, this says $f_D(7) = 3$.
+\end{theorem}
+\begin{proof}
+  Apply the seven-vertex disjunction of Theorem~\ref{thm:seven} and rewrite each side of the
+  resulting disjunction through the bridge of Lemma~\ref{lem:statement-bridge}.
 \end{proof}
