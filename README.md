@@ -32,7 +32,7 @@ The literature check did not establish priority, so no claim of a new or first p
 | Blueprint | [Source](blueprint/src/content.tex); publication pending |
 | `formal-conjectures` | No inherited statement or proof PR; the statement was authored in this project |
 | Mathlib | Reusable proof machinery is in GraphDimension; no Mathlib PR for this release |
-| Palomar | Not yet submitted |
+| Palomar | [PALOMAR-2026-09-30-000026](https://palomar-registry.org/entry.html?id=PALOMAR-2026-09-30-000026&version=1), registered at commit `1141386`, trust level high ([record](docs/palomar-2026-09-29.md)) |
 
 **Review.** A release review by grok, which wrote none of P9's own Lean, found the statement faithful and the
 target right, and asked for documentation fixes, all applied ([record](docs/review-2026-09-29.md)). grok models
